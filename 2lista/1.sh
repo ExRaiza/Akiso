@@ -7,12 +7,12 @@ time1=0
 time2=0
 sum1=0
 sum2=0
+i=0
 
 while [ 1 -eq 1 ]
 do
 	read_speed=0
 	write_speed=0
-	#cat /proc/diskstats
 	cpu=`cat /proc/loadavg | awk '{print $1}' | head -n 1`
 	sectors_read=`cat /proc/diskstats | awk '{print $6}' | head -n 1`
 	sectors_write=`cat /proc/diskstats | awk '{print $10}' | head -n 1`
@@ -48,6 +48,7 @@ do
 
 
 	text=0;
+	text2=0
 	if [ $write_speed -gt 1000 ] && [ $write_speed -lt 1000000 ] 
 	then
 		write_speed=$(($write_speed/1000))
@@ -63,17 +64,32 @@ do
 	if [ $read_speed -gt 1000 ] && [ $read_speed -lt 1000000 ] 
 	then
 		read_speed=$(($read_speed/1000))
-		text="$text || read $read_speed KB/s"
+		text2=" read $read_speed KB/s"
 	elif [ $read_speed  -gt 1000000 ] 
 	then
 		read_speed=$(($read_speed/1000))
-		text="$text || read $read_speed MB/s"
+		text2="read $read_speed MB/s"
 	else
-		text="$text || read $read_speed B/s"
+		text2="read $read_speed B/s"
 	fi
 
-	echo "$text || CPU $cpu"
+	clear
+	echo "$text"
+	echo "$text2"
+	echo "CPU $cpu"
 
+	arr[$i]=$cpu
+	((i++))
+	echo "${arr[*]}"
+	if [ $i -gt 9 ] 
+	then
+		((i--))
+		for counter in {0..9}
+        do
+            arr[$counter]=${arr[$(($counter+1))]}
+            echo ${arr[$counter]}
+        done
+	fi
 done
 
 
