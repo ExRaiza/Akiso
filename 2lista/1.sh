@@ -14,6 +14,7 @@ tput civis
 
 while [ 1 -eq 1 ]
 do
+	sleep 1	
 	read_speed=0
 	write_speed=0
 	cpu=`cat /proc/loadavg | awk '{print $1}' | head -n 1`
@@ -38,43 +39,50 @@ do
 	if ! [ $sectors_read -eq $sectors_read2 ]
 	then 
 		#time1=`echo "scale=3;$SECONDS-$sum1" | bc | awk '{printf "%.3f", $0}'`
-		#time1=$(($SECONDS-$sum1))
+		time1=$(($SECONDS-$sum1))
 		#sum1=`echo "scale=3;$sum1+$time1" | bc | awk '{printf "%.3f", $0}'`
 		((sum1+=$time1))		
 		sectors_rdiff=$(("$sectors_read - $sectors_read2"))
 		sectors_read2=$sectors_read
-		read_speed=$((sectors_rdiff*512/$time1))		
-		#read_speed=`echo "scale=3;$sectors_rdiff*512/$time1" | bc | awk '{printf "%.3f", $0}'`
+		#read_speed=$((sectors_rdiff*512/$time1))		
+		read_speed=`echo "scale=3;$sectors_rdiff*512/$time1" | bc | awk '{printf "%.3f", $0}'`
 	fi
 
 	if ! [ $sectors_write -eq $sectors_write2 ] 
 	then 
+		#time2=`echo "scale=3;$SECONDS-$sum2" | bc | awk '{printf "%.3f", $0}'`
 		time2=$(($SECONDS-$sum2))
+		#sum2=`echo "scale=3;$sum2+$time2" | bc | awk '{printf "%.3f", $0}'`		
 		((sum2+=time2))
 		sectors_wdiff=$(("$sectors_write - $sectors_write2"))
 		sectors_write2=$sectors_write
-		if [ $time2 -gt 0 ]
-		then
-			write_speed=$(("$sectors_wdiff*512/$time2"))
-
-		fi
+		write_speed=$(("$sectors_wdiff*512/$time2"))
 	fi
 
 	tput clear
 
-	arr_write[$i]=$(($write_speed/1000))
-	#`echo "scale=3;$write_speed/1000" | bc | awk '{printf "%.3f", $0}'`
-	#arr_read[$i]=`echo "scale=3;$read_speed/1000" | bc | awk '{printf "%.3f", $0}'`
-	arr_read[$i]=$(($read_speed/1000))
+	if (( `echo "$write_speed == 0" | bc ` ))
+	then 
+		arr_write[$i]=0
+	else
+		arr_write[$i]=`echo "scale=2;$write_speed/1000" | bc | awk '{printf "%.2f", $0}'`
+	fi
+	if (( `echo "$read_speed == 0" | bc ` ))
+	then 
+		arr_read[$i]=0
+	else
+		arr_read[$i]=`echo "scale=2;$read_speed/1000" | bc | awk '{printf "%.2f", $0}'`
+	fi
+	#arr_read[$i]=$(($read_speed/1000))
 	arr_cpu[$i]="$cpu"
 
 	IFS=$'\n'
 	maxR=`echo "${arr_read[*]}" | sort -nr | head -n1`
-	#compR=`echo "scale=3;maxR/15" | bc | awk '{printf "%.3f", $0}'`
-	compR=$(($maxR/15))	
+	compR=`echo "scale=3;$maxR/15" | bc | awk '{printf "%.3f", $0}'`
+	#compR=$(($maxR/15))	
 	maxW=`echo "${arr_write[*]}" | sort -nr | head -n1`
-	compW=$(($maxW/15))
-	#`echo "scale=3;maxW/15" | bc | awk '{printf "%.3f", $0}'`
+	#compW=$(($maxW/15))
+	compW=`echo "scale=3;$maxW/15" | bc | awk '{printf "%.3f", $0}'`
 	maxC=`echo "${arr_cpu[*]}" | sort -nr | head -n1`
 	tput cup 20 0 
 	compC=`echo "scale=3;$maxC/15" | bc | awk '{printf "%.3f", $0}'`
@@ -157,7 +165,6 @@ do
 	tput cup 0 30
 	echo "$text2"
 	tput cup 0 60
-	#printf "LOL"
 	echo "CPU $cpu"
 
 	if [ $i -gt 8 ] 
