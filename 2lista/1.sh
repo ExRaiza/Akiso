@@ -1,7 +1,7 @@
 #!/bin/bash
 
-sectors_read2=`cat /proc/diskstats | awk '{print $6}' | head -n 1`
-sectors_write2=`cat /proc/diskstats | awk '{print $10}' | head -n 1`
+sectors_read2=`cat /proc/diskstats | grep sda | awk '{print $6}' | head -n 1`
+sectors_write2=`cat /proc/diskstats | grep sda | awk '{print $10}' | head -n 1`
 SECONDS=0
 time1=0
 time2=0
@@ -20,66 +20,77 @@ do
 	sectors_read=`cat /proc/diskstats | awk '{print $6}' | head -n 1`
 	sectors_write=`cat /proc/diskstats | awk '{print $10}' | head -n 1`
 
-	sleep 1
-
-	if [ $time1 -gt 10 ]
-	then
-		read_speed=0
-	fi
+	#if [ $time1 -gt 10 ]
+	#then
+	#	read_speed=0
+	#fi
 	
+	if [ $time1 -eq 0 ]
+	then
+		time1=1
+	fi
+
+	if [ $time1 -eq 0 ]
+	then
+		time1=1
+	fi
+
 	if ! [ $sectors_read -eq $sectors_read2 ]
 	then 
-		time1=$(($SECONDS-$sum1))
-		((sum1+=time1))
-		sectors_rdiff=`echo "$sectors_read - $sectors_read2" | bc`
+		#time1=`echo "scale=3;$SECONDS-$sum1" | bc | awk '{printf "%.3f", $0}'`
+		#time1=$(($SECONDS-$sum1))
+		#sum1=`echo "scale=3;$sum1+$time1" | bc | awk '{printf "%.3f", $0}'`
+		((sum1+=$time1))		
+		sectors_rdiff=$(("$sectors_read - $sectors_read2"))
 		sectors_read2=$sectors_read
-		read_speed=`echo "$sectors_rdiff*512/$time1" | bc`
+		read_speed=$((sectors_rdiff*512/$time1))		
+		#read_speed=`echo "scale=3;$sectors_rdiff*512/$time1" | bc | awk '{printf "%.3f", $0}'`
 	fi
-
-	tput cup 20 0
-	printf "LOL"
-	echo `echo "$sectors_rdiff*512/$time1" >>  bc`
-
 
 	if ! [ $sectors_write -eq $sectors_write2 ] 
 	then 
 		time2=$(($SECONDS-$sum2))
 		((sum2+=time2))
-		sectors_wdiff=`echo "$sectors_write - $sectors_write2" | bc`
+		sectors_wdiff=$(("$sectors_write - $sectors_write2"))
 		sectors_write2=$sectors_write
 		if [ $time2 -gt 0 ]
 		then
-			write_speed=`echo "$sectors_wdiff*512/$time2" | bc`
+			write_speed=$(("$sectors_wdiff*512/$time2"))
 
 		fi
 	fi
 
-	#tput clear
+	tput clear
 
-	arr_write[$i]=`echo "$write_speed/1000" | bc`
-	arr_read[$i]="$read_speed"
+	arr_write[$i]=$(($write_speed/1000))
+	#`echo "scale=3;$write_speed/1000" | bc | awk '{printf "%.3f", $0}'`
+	#arr_read[$i]=`echo "scale=3;$read_speed/1000" | bc | awk '{printf "%.3f", $0}'`
+	arr_read[$i]=$(($read_speed/1000))
 	arr_cpu[$i]="$cpu"
 
 	IFS=$'\n'
 	maxR=`echo "${arr_read[*]}" | sort -nr | head -n1`
-	compR=$((maxR/15))
+	#compR=`echo "scale=3;maxR/15" | bc | awk '{printf "%.3f", $0}'`
+	compR=$(($maxR/15))	
 	maxW=`echo "${arr_write[*]}" | sort -nr | head -n1`
-	compW=$((maxW/15))
+	compW=$(($maxW/15))
+	#`echo "scale=3;maxW/15" | bc | awk '{printf "%.3f", $0}'`
 	maxC=`echo "${arr_cpu[*]}" | sort -nr | head -n1`
-	compC=`echo "$maxC / 15" |  bc`
+	tput cup 20 0 
+	compC=`echo "scale=3;$maxC/15" | bc | awk '{printf "%.3f", $0}'`
 	IFS=
 
-	if [ $compR -eq 0 ] 
+	if (( `echo "$compR == 0" | bc` ))
 	then
 		compR=15
 	fi
 
-	if [ $compW -eq 0 ] 
+	if (( `echo "$compW == 0" | bc` ))
 	then
 		compW=15
 	fi
 
-	if [ $compC -eq 0 ] 
+	if (( `echo "$compC == 0 " | bc -l` ))
 	then
 		compC=15
 	fi
@@ -88,7 +99,7 @@ do
     do 
     	tput cup $(($counter+1)) 0
     	tput setab 1
-    	length=$(( ${arr_write[counter]}/$compW ))
+    	length=`echo "scale=0;${arr_write[counter]} / $compW" | bc | awk '{printf "%.0f", $0}'`
 		printf '%*s' "$length"
 		tput sgr0
 		printf " ${arr_write[counter]} KB/s"
@@ -98,32 +109,32 @@ do
     do 
     	tput cup $(($counter+1)) 30
     	tput setab 1
-    	length=$(( ${arr_read[counter]}/$compR ))
+    	length=`echo "scale=0;${arr_read[counter]} / $compR" | bc | awk '{printf "%.0f", $0}'`
 		printf '%*s' "$length"
 		tput sgr0
 		printf " ${arr_read[counter]} B/s"
     done
 
     for counter in ${!arr_cpu[@]}
-    do 
+   	do 
     	tput cup $(($counter+1)) 60
     	tput setab 1
-    	length=`echo "${arr_cpu[counter]}/$compC" | bc `
+    	length=`echo "scale=1;${arr_cpu[counter]}/$compC" | bc | awk '{printf "%d", $0}'`
 		printf '%*s' "$length"
 		tput sgr0
 		printf " ${arr_cpu[counter]}"
-    done
+   	done
 
 
     text=0;
 	text2=0
 	if [ $write_speed -gt 1000 ] && [ $write_speed -lt 1000000 ] 
 	then
-		write_speed=`echo "$write_speed/1000" | bc`
+		write_speed=$(("$write_speed/1000"))
 		text="write $write_speed KB/s"
 	elif [ $write_speed  -gt 1000000 ] 
 	then
-		write_speed=`echo "$write_speed/1000000" | bc`
+		write_speed=$(("$write_speed/1000000"))
 		text="write $write_speed MB/s"
 	else
 		text="write $write_speed B/s"
@@ -131,11 +142,11 @@ do
 
 	if [ $read_speed -gt 1000 ] && [ $read_speed -lt 1000000 ] 
 	then
-		read_speed=$(($read_speed/1000))
-		text2=" read $read_speed KB/s"
+		read_speed=$(("$read_speed/1000"))
+		text2="read $read_speed KB/s"
 	elif [ $read_speed  -gt 1000000 ] 
 	then
-		read_speed=$(($read_speed/1000))
+		read_speed=$(("$read_speed/1000"))
 		text2="read $read_speed MB/s"
 	else
 		text2="read $read_speed B/s"
@@ -147,7 +158,7 @@ do
 	echo "$text2"
 	tput cup 0 60
 	#printf "LOL"
-	#echo "CPU $cpu"
+	echo "CPU $cpu"
 
 	if [ $i -gt 8 ] 
 	then
