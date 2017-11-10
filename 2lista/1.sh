@@ -10,7 +10,7 @@ sum2=0
 i=0
 tput civis
 #tput cvvis
-
+bufor=0
 
 while [ 1 -eq 1 ]
 do
@@ -20,11 +20,6 @@ do
 	cpu=`cat /proc/loadavg | awk '{print $1}' | head -n 1`
 	sectors_read=`cat /proc/diskstats | awk '{print $6}' | head -n 1`
 	sectors_write=`cat /proc/diskstats | awk '{print $10}' | head -n 1`
-
-	#if [ $time1 -gt 10 ]
-	#then
-	#	read_speed=0
-	#fi
 	
 	if [ $time1 -eq 0 ]
 	then
@@ -108,9 +103,13 @@ do
     	tput cup $(($counter+1)) 0
     	tput setab 1
     	length=`echo "scale=0;${arr_write[counter]} / $compW" | bc | awk '{printf "%.0f", $0}'`
-		printf '%*s' "$length"
-		tput sgr0
+		bufor=`printf '%*s' "$length"`
+		tput sgr0	
+		txt=`printf " ${arr_write[counter]} KB/s"`
+		bufor="$bufor"+`printf '%*s' "$((30-$length-${#arr_write[counter]}))"`
 		printf " ${arr_write[counter]} KB/s"
+		tput cup $((15+counter)) 0 
+		echo "$((${#arr_write[counter]}))"
     done
 
     for counter in ${!arr_read[@]}
@@ -136,11 +135,11 @@ do
 
     text=0;
 	text2=0
-	if [ $write_speed -gt 1000 ] && [ $write_speed -lt 1000000 ] 
+	if (( `echo "$write_speed > 1000" | bc` )) && (( `echo "$write_speed  < 1000000" | bc` ))
 	then
 		write_speed=$(("$write_speed/1000"))
 		text="write $write_speed KB/s"
-	elif [ $write_speed  -gt 1000000 ] 
+	elif (( `echo "$write_speed > 1000000" | bc` ))
 	then
 		write_speed=$(("$write_speed/1000000"))
 		text="write $write_speed MB/s"
@@ -148,13 +147,13 @@ do
 		text="write $write_speed B/s"
 	fi
 
-	if [ $read_speed -gt 1000 ] && [ $read_speed -lt 1000000 ] 
+	if (( `echo "$read_speed > 1000" | bc` ))  && (( `echo "$read_speed < 1000000" | bc` )) 
 	then
-		read_speed=$(("$read_speed/1000"))
+		read_speed=`echo "scale=2;$read_speed/1000" | bc | awk '{printf "%.2f", $0}'`
 		text2="read $read_speed KB/s"
-	elif [ $read_speed  -gt 1000000 ] 
+	elif (( `echo "$read_speed > 1000000" | bc` )) 
 	then
-		read_speed=$(("$read_speed/1000"))
+		read_speed=`echo "scale=2;$read_speed/1000000" | bc | awk '{printf "%.2f", $0}'`
 		text2="read $read_speed MB/s"
 	else
 		text2="read $read_speed B/s"
