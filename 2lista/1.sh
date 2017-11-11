@@ -71,7 +71,7 @@ do
    	leng=`printf "$((30-${#text}-8))"`
    	tput cup 0 0 
    	leng2=`printf "$((30-${#text2}-7))"`
-   	bufor=`printf "write $text %*s read $text2" $leng`
+   	bufor=`printf "WRITE $text %*s READ $text2" $leng`
    	bufor=`printf "$bufor %*s CPU $cpu" $leng2`
    	echo $bufor
 	#tput cup 0 0
@@ -147,11 +147,12 @@ do
 
 		length=`echo "scale=1;${arr_cpu[counter]}/$compC" | bc | awk '{printf "%d", $0}'`
 		bufor=`printf "$bufor\e[41m%*s\e[0m" "$length"`
-		txt=`printf "${arr_cpu[$counter]} %*s" 6`
+		cols=`tput cols`
+		txt=`printf "${arr_cpu[$counter]}%*s" 8`
 		bufor="$bufor $txt \n"
 
     done
-
+    tput cup 1 0
     echo -e $bufor
 
 	if [ $i -gt 8 ] 
