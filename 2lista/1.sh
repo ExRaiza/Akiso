@@ -74,14 +74,6 @@ do
    	bufor=`printf "WRITE $text %*s READ $text2" $leng`
    	bufor=`printf "$bufor %*s CPU $cpu" $leng2`
    	echo $bufor
-	#tput cup 0 0
-	#echo "write $text"
-	#tput cup 0 30
-	#echo "read $text2"
-	#tput cup 0 60
-	#echo "CPU $cpu"
-
-
 
 	if (( `echo "$write_speed == 0" | bc ` ))
 	then 
@@ -150,7 +142,7 @@ do
 		bufor="$bufor $txt \n"
 
     done
-    
+
     echo -e $bufor
 
 	if [ $i -gt 8 ] 
