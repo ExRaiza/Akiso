@@ -34,26 +34,19 @@ do
 	read_speed=0
 	write_speed=0
 	cpu=`cat /proc/loadavg | awk '{print $1}' | head -n 1 | awk '{printf "%.2f", $0}'`
-	#cpu=`echo $cpu | awk '{printf "%.2f", $0}'`
 	sectors_read=`cat /proc/diskstats | awk '{print $6}' | head -n 1`
 	sectors_write=`cat /proc/diskstats | awk '{print $10}' | head -n 1`
-	
-	if [ $time1 -eq 0 ]
-	then
-		time1=1
-	fi
-
-	if [ $time2 -eq 0 ]
-	then
-		time2=1
-	fi
 
 	if ! [ $sectors_read -eq $sectors_read2 ]
 	then 
 		time1=$(($SECONDS-$sum1))
 		((sum1+=$time1))		
 		sectors_rdiff=$(("$sectors_read - $sectors_read2"))
-		sectors_read2=$sectors_read		
+		sectors_read2=$sectors_read	
+		if [ $time1 -eq 0 ]
+		then
+			time1=1
+		fi		
 		read_speed=`echo "scale=3;$sectors_rdiff*512/$time1" | bc | awk '{printf "%.3f", $0}'`
 	fi
 
@@ -63,7 +56,11 @@ do
 		((sum2+=time2))
 		sectors_wdiff=$(("$sectors_write - $sectors_write2"))
 		sectors_write2=$sectors_write
-		write_speed=$(("$sectors_wdiff*512/$time2"))
+		if [ $time2 -eq 0 ]
+		then
+			time2=1
+		fi
+		write_speed=`echo "scale=3;$sectors_wdiff*512/$time2" | bc | awk '{printf "%.3f", $0}'`
 	fi
 
 	doMagic $write_speed
@@ -125,12 +122,13 @@ do
 	fi
 
 	unset bufor
-	
+
 	for counter in ${!arr_write[@]}
     do 
-    	tput cup $(($counter+1)) 0
+    	#tput cup $(($counter+1)) 0
     	length=`echo "scale=0;${arr_write[counter]} / $compW" | bc | awk '{printf "%.0f", $0}'`
-		bufor=`printf '\e[41m%*s\e[0m' "$length"`
+		#bufor=`printf "\e[41m%*s\e[0m" "$length"`
+		bufor=`printf "$bufor\e[41m%*s\e[0m" "$length"`
 		doMagic ${arr_write[counter]}
 		txt=$return
 		bufor="$bufor $txt"
@@ -149,11 +147,12 @@ do
 
 		length=`echo "scale=1;${arr_cpu[counter]}/$compC" | bc | awk '{printf "%d", $0}'`
 		bufor=`printf "$bufor\e[41m%*s\e[0m" "$length"`
-		txt=`printf "${arr_cpu[$counter]} %*s" 10`
-		bufor="$bufor $txt"
+		txt=`printf "${arr_cpu[$counter]} %*s" 6`
+		bufor="$bufor $txt \n"
 
-		echo $bufor
     done
+
+    echo -e $bufor
 
 	if [ $i -gt 8 ] 
 	then
@@ -162,6 +161,7 @@ do
         do
             arr_write[$counter]=${arr_write[$(($counter+1))]}
             arr_read[$counter]=${arr_read[$(($counter+1))]}
+            arr_cpu[$counter]=${arr_cpu[$(($counter+1))]}
         done
 	fi
 
