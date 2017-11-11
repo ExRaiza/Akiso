@@ -125,9 +125,7 @@ do
 
 	for counter in ${!arr_write[@]}
     do 
-    	#tput cup $(($counter+1)) 0
     	length=`echo "scale=0;${arr_write[counter]} / $compW" | bc | awk '{printf "%.0f", $0}'`
-		#bufor=`printf "\e[41m%*s\e[0m" "$length"`
 		bufor=`printf "$bufor\e[41m%*s\e[0m" "$length"`
 		doMagic ${arr_write[counter]}
 		txt=$return
@@ -152,7 +150,7 @@ do
 		bufor="$bufor $txt \n"
 
     done
-    tput cup 1 0
+    
     echo -e $bufor
 
 	if [ $i -gt 8 ] 
