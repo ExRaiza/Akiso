@@ -10,8 +10,8 @@ sum2=0
 i=0
 tput civis
 trap ctrl_c INT
-trap "exit 1" TERM
-export TOP_PID=$$
+#trap "exit 1" TERM
+#export TOP_PID=$$
 
 tput clear
 
@@ -19,7 +19,8 @@ function ctrl_c() {
         tput cvvis
         tput cup 11 0
         echo "** Trapped CTRL-C"
-        kill -s TERM $TOP_PID
+        exit 1
+        #kill -s TERM  $TOP_PID
 }
 
 function doMagic () {
