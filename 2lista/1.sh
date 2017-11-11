@@ -12,6 +12,23 @@ tput civis
 #tput cvvis
 bufor=0
 
+function doMagic () {
+	return=$1
+	#echo "RETURN $return " 
+	if (( `echo "$return > 1024" | bc` )) && (( `echo "$return  < 1048576" | bc` ))
+	then
+		return=`echo "scale=2;$return/1000" | bc | awk '{printf "%.2f", $0}'`
+		return="$return KB/s"
+	elif (( `echo "$return > 1048576" | bc` ))
+	then
+		return=`echo "scale=2;$return/1000000" | bc | awk '{printf "%.2f", $0}'`
+		return="$return MB/s"
+	else
+		return="$return B/s"
+	fi
+	#echo "RETURN2 $return"
+}
+
 while [ 1 -eq 1 ]
 do
 	sleep 1	
@@ -26,9 +43,9 @@ do
 		time1=1
 	fi
 
-	if [ $time1 -eq 0 ]
+	if [ $time2 -eq 0 ]
 	then
-		time1=1
+		time2=1
 	fi
 
 	if ! [ $sectors_read -eq $sectors_read2 ]
@@ -101,15 +118,18 @@ do
 	for counter in ${!arr_write[@]}
     do 
     	tput cup $(($counter+1)) 0
-    	tput setab 1
+    	#tput setab 1
     	length=`echo "scale=0;${arr_write[counter]} / $compW" | bc | awk '{printf "%.0f", $0}'`
-		bufor=`printf '%*s' "$length"`
+		bufor=`printf '\e[41m%*s\e[0m' "$length"`
 		tput sgr0	
-		txt=`printf " ${arr_write[counter]} KB/s"`
-		bufor="$bufor"+`printf '%*s' "$((30-$length-${#arr_write[counter]}))"`
-		printf " ${arr_write[counter]} KB/s"
-		tput cup $((15+counter)) 0 
-		echo "$((${#arr_write[counter]}))"
+		txt=`printf "${arr_write[counter]} KB/s"`
+		bufor="$bufor $txt"
+		#bufor="$bufor"+`printf '%*s' "$((30-$length-${#arr_write[counter]}))"` 
+		temp=`printf "$((30-$length-${#arr_write[counter]}-7))"`
+		txt=`printf "%*s|" "$temp"`
+		bufor="$bufor$txt"
+		echo $bufor
+		#echo "$((${#arr_write[counter]}))"
     done
 
     for counter in ${!arr_read[@]}
@@ -132,37 +152,15 @@ do
 		printf " ${arr_cpu[counter]}"
    	done
 
-
-    text=0;
-	text2=0
-	if (( `echo "$write_speed > 1000" | bc` )) && (( `echo "$write_speed  < 1000000" | bc` ))
-	then
-		write_speed=$(("$write_speed/1000"))
-		text="write $write_speed KB/s"
-	elif (( `echo "$write_speed > 1000000" | bc` ))
-	then
-		write_speed=$(("$write_speed/1000000"))
-		text="write $write_speed MB/s"
-	else
-		text="write $write_speed B/s"
-	fi
-
-	if (( `echo "$read_speed > 1000" | bc` ))  && (( `echo "$read_speed < 1000000" | bc` )) 
-	then
-		read_speed=`echo "scale=2;$read_speed/1000" | bc | awk '{printf "%.2f", $0}'`
-		text2="read $read_speed KB/s"
-	elif (( `echo "$read_speed > 1000000" | bc` )) 
-	then
-		read_speed=`echo "scale=2;$read_speed/1000000" | bc | awk '{printf "%.2f", $0}'`
-		text2="read $read_speed MB/s"
-	else
-		text2="read $read_speed B/s"
-	fi
+   	doMagic $write_speed
+   	text=$return
+   	doMagic $read_speed
+   	text2=$return
 
 	tput cup 0 0
-	echo "$text"
+	echo "write $text"
 	tput cup 0 30
-	echo "$text2"
+	echo "read $text2"
 	tput cup 0 60
 	echo "CPU $cpu"
 
